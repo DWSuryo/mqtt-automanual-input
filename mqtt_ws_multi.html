@@ -82,13 +82,10 @@
       }
     }
     function sensorindicator(msg){
-      mqtt.subscribe("45856/esp8266/sensors");
-      if (msg.destinationName=='45856/esp8266/sensors'){
-        msg_sensor = JSON.parse(msg.payloadString);
-        document.getElementById("temp1").innerHTML=msg_sensor.temperature1;
-        document.getElementById("hum1").innerHTML=msg_sensor.humidity1;
-        document.getElementById("kwh1").innerHTML=msg_sensor.kwh;
-      }
+      msg_sensor = JSON.parse(msg.payloadString);
+      document.getElementById("temp1").innerHTML=msg_sensor.temperature1;
+      document.getElementById("hum1").innerHTML=msg_sensor.humidity1;
+      document.getElementById("kwh1").innerHTML=msg_sensor.kwh1;
     }
 
     // temporary data storage
@@ -115,14 +112,16 @@
         autoindicator(msg);
       }
       //sensor receiving
-      sensorindicator(msg);
-      
+      if (msg.destinationName=="45856/esp8266/sensors"){
+        sensorindicator(msg);
+      }
     }     
     function onConnect() {
       // Once a connection has been made, make a subscription and send a message.
       console.log("Connected ");
-      mqtt.subscribe("45856/start");
-      mqtt.subscribe("45856/test/auto");
+      mqtt.subscribe("45856/esp8266/sensors");
+			mqtt.subscribe("45856/test/auto");
+			mqtt.subscribe("45856/start");
       message = new Paho.MQTT.Message("Hello World");
       message.destinationName = "45856/start";
       mqtt.send(message);
@@ -156,12 +155,25 @@
       <h5 id="genstatus">unclicked</h5>
       <script type="text/javascript">
         function automanual(){
+          let tr;
+          let trig ={
+            'trigger' : tr
+          };
+          let trig_conv;
           let x = document.getElementById("genstatus");
           let y = document.getElementById("generatebtn");
           let a = document.getElementById("send1");
           let b = document.getElementById("send2");
           if (y.innerHTML=='Auto'){
-            console.log("entering manual mode");
+            //trigger for arduino            
+            trig.trigger=1;
+            trig_conv = JSON.stringify(trig);
+            message = new Paho.MQTT.Message(trig_conv);
+            message.destinationName = "45856/test/trigger";
+            mqtt.send(message);
+            
+
+            console.log("entering manual mode "+trig_conv);
             mqtt.unsubscribe('45856/test/auto');
             mqtt.subscribe('45856/test/manual');
             y.innerHTML = "Manual";
@@ -171,7 +183,16 @@
             b.disabled = false;
           }
           else if (y.innerHTML='Manual'){
-            console.log("entering auto mode")
+            //trigger for arduino
+            
+            trig.trigger=0;
+            trig_conv = JSON.stringify(trig);
+            message = new Paho.MQTT.Message(trig_conv);
+            message.destinationName = "45856/test/trigger";
+            mqtt.send(message);
+            
+
+            console.log("entering auto mode "+trig_conv)
             mqtt.unsubscribe('45856/test/manual');
             mqtt.subscribe('45856/test/auto');
             y.innerHTML = 'Auto';
@@ -184,19 +205,13 @@
       </script>
       <button id="send1" class="btn btn-primary text-white" onclick="testsend1()" disabled>Send1</button>
         <script type="text/javascript" charset="utf-8">
-        var left, right;
-        var cam ={
-          'left' : left,
-          'right' : right,
-        };
         function testsend1(){
           //subscribe topic  
           mqtt.subscribe('45856/test/manual');
           let x = document.getElementById("test1");
           if (x.innerHTML=='' || x.innerHTML==0 || x.innerHTML==null){
-            cam.left = 1;
-            cam.right = store.right;
-            cam_conv = JSON.stringify(cam);
+            store.left = 1;
+            cam_conv = JSON.stringify(store);
             //console.log("message confirmed: "+cam_conv);
             message = new Paho.MQTT.Message(cam_conv);
             message.destinationName = "45856/test/manual";
@@ -204,9 +219,8 @@
             test1_func(message);
           }
           else if (x.innerHTML==1){
-            cam.left = 0;
-            cam.right = store.right;
-            cam_conv = JSON.stringify(cam);
+            store.left = 0;
+            cam_conv = JSON.stringify(store);
             //console.log("message confirmed: "+cam_conv);
             message = new Paho.MQTT.Message(cam_conv);
             message.destinationName = "45856/test/manual";
@@ -218,18 +232,16 @@
         function testSend2(){
           let y = document.getElementById("test2");
           if (y.innerHTML=='' || y.innerHTML==0 || y.innerHTML==null){
-            cam.right = 1;
-            cam.left = store.left;
-            cam_conv = JSON.stringify(cam);
+            store.right = 1;
+            cam_conv = JSON.stringify(store);
             message = new Paho.MQTT.Message(cam_conv);
             message.destinationName = "45856/test/manual";
             mqtt.send(message);
             test2_func(message);
           }
           else if (y.innerHTML==1){
-            cam.right = 0;
-            cam.left = store.left;
-            cam_conv = JSON.stringify(cam);
+            store.right = 0;
+            cam_conv = JSON.stringify(store);
             message = new Paho.MQTT.Message(cam_conv);
             message.destinationName = "45856/test/manual";
             mqtt.send(message);
@@ -250,9 +262,9 @@
           </thead>
           <tbody>
             <tr>
-              <td id="temp1">xx<span> °C</span></td>
-              <td id="hum1">xx<span> %</span></td>
-              <td id="kwh1">xx<span> kWh</span></td>
+              <td><span id="temp1"></span> °C</td>
+              <td><span id="hum1"></span> %</td>
+              <td><span id="kwh1"></span> kWh</td>
             </tr>
           </tbody>
         </table>
