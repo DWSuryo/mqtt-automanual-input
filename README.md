@@ -35,3 +35,4 @@ Displays indicator to web and ESP8266
 - [ArduinoJson (with v6 documentation)](https://arduinojson.org/)
 - [Rui Santos: ESP8266 publishing DHT data to Flask Web](https://randomnerdtutorials.com/esp8266-publishing-dht22-readings-with-mqtt-to-raspberry-pi/)
 - [EMQX: MQTT publish generator](https://www.emqx.io/blog/how-to-use-mqtt-in-python)
+- [Steve's Internet Guide: MQTT Javascript](http://www.steves-internet-guide.com/using-javascript-mqtt-client-websockets/)
