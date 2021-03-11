@@ -12,8 +12,8 @@
 #include <ArduinoJson.h>
 
 // Change the credentials below, so your ESP8266 connects to your router
-const char* ssid = "insert username";
-const char* password = "insert password";
+const char* ssid = "fill this";
+const char* password = "fill this";
 
 // Change the variable to your Raspberry Pi IP address, so it connects to your MQTT broker
 const char* mqtt_server = "192.168.1.3";
@@ -68,7 +68,56 @@ void callback(String topic, byte* message, unsigned int length) {
   // Feel free to add more if statements to control more GPIOs with MQTT
 
   // If a message is received on the topic home/office/esp1/gpio2, you check if the message is either 1 or 0. Turns the ESP GPIO according to the message
-  //------------planning: make auto input, one topic with json------------
+  
+  //receives trigger for activating auto/manual mode in ESP
+  if(topic=="45856/test/trigger"){
+    StaticJsonDocument<16> doc_trig;
+    deserializeJson(doc_trig, message, length);
+    int trigger = doc_trig["trigger"]; // 1
+    Serial.print("Trigger received: ");
+    Serial.print(trigger);
+    if(trigger==1){
+      Serial.print(" MANUAL MODE");
+      client.unsubscribe("45856/test/auto");
+      client.subscribe("45856/test/manual");
+    }
+    else if(trigger==0){
+      Serial.print(" AUTO MODE");
+      client.subscribe("45856/test/auto");
+      client.unsubscribe("45856/test/manual");
+    }
+  }
+
+  //manual mode logic
+  if(topic=="45856/test/manual"){
+    Serial.print("received manual: ");
+    StaticJsonDocument<32> msg_manual;
+    deserializeJson(msg_manual, message, length);
+    int m_left = msg_manual["left"]; // 1
+    int m_right = msg_manual["right"]; // 1
+    //left logic
+    if (m_left==1){
+      digitalWrite(ledGPIO4, HIGH);
+      Serial.print("GPIO4 1");
+    }
+    else if (m_left==0){
+      digitalWrite(ledGPIO4, LOW);
+      Serial.print("GPIO4 0");
+    }
+    Serial.print(" | ");
+    
+    //right logic
+    if (m_right==1){
+      digitalWrite(ledGPIO5, HIGH);
+      Serial.print("GPIO4 1");
+    }
+    else if (m_right==0){
+      digitalWrite(ledGPIO5, LOW);
+      Serial.print("GPIO4 0");
+    }
+  }
+
+  //auto mode logic
   if(topic=="45856/test/auto"){
     Serial.print("received auto: ");
     StaticJsonDocument<32> msg_auto;
@@ -88,22 +137,22 @@ void callback(String topic, byte* message, unsigned int length) {
     //left logic
     if (left==1){
       digitalWrite(ledGPIO4, HIGH);
-      Serial.print("GPIO4 ON");
+      Serial.print("GPIO4 1");
     }
     else if (left==0){
       digitalWrite(ledGPIO4, LOW);
-      Serial.print("GPIO4 ON");
+      Serial.print("GPIO4 0");
     }
     Serial.print(" | ");
     
     //right logic
     if (right==1){
       digitalWrite(ledGPIO5, HIGH);
-      Serial.print("GPIO4 ON");
+      Serial.print("GPIO4 1");
     }
     else if (right==0){
       digitalWrite(ledGPIO5, LOW);
-      Serial.print("GPIO4 ON");
+      Serial.print("GPIO4 0");
     }
   }
   Serial.println();
@@ -134,6 +183,7 @@ void reconnect() {
       // Subscribe or resubscribe to a topic
       // You can subscribe to more topics (to control more LEDs in this example)
       client.subscribe("45856/test/auto");
+      client.subscribe("45856/test/trigger");
       //client.subscribe("esp8266/5");
     } else {
       Serial.print("failed, rc=");
@@ -225,25 +275,31 @@ void loop() {
     StaticJsonDocument<capacity> doc;         // create doc json object
     doc["temperature1"] = t;
     doc["humidity1"] = h;
-    doc["kwh"] = kwh;
+    doc["kwh1"] = kwh;
     char output[200];
     //serializeJson(doc,output);
     //const char* pub_msg = serializeJson(doc,output,measureJson(doc));  // to string
-    serializeJson(doc,output,measureJson(doc));  // to string
+    serializeJson(doc,output,measureJson(doc)+1);  // to string
     //Serial.println(pub_msg);
     
     // publishes json message
     client.publish("45856/esp8266/sensors", output);
 
-    Serial.print("Humidity: ");
+    Serial.print("Hum1: ");
     Serial.print(h);
-    Serial.print(" %\t Temperature: ");
+    Serial.print(" | Temp1: ");
     Serial.print(t);
     Serial.print(" *C ");
     Serial.print(f);
-    Serial.print(" *F\t Heat index: ");
+    Serial.print(" *F ");
+    Serial.print("| kWh1: ");
+    Serial.print(kwh);
+    Serial.print(" kWh");
+    /*
+    Serial.print("| Heat index: ");
     Serial.print(hic);
     Serial.println(" *C ");
+    */
     // Serial.print(hif);
     // Serial.println(" *F");
   }
