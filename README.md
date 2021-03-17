@@ -37,7 +37,7 @@ Displays indicator to web and ESP8266
 3. Open the html file
 4. For ESP8266: open and upload `IoT_esp.ino` to device
    -  Don't have ESP? It's fine, the html already represents values in ESP's serial monitor. For sensors, you can unquote commands related to sensors in python file (the commands are the same as auto part), then publish them
-   -  Additional tools: you can analyze MQTT topics in topic viewer, such as mosquitto topic viewer (with `mosquitto-sub -t 'insert_topic'` in cmd, make sure to `chdir` in mosquitto folder). If you're not into cmd, MQTTX topic viewer helps too
+   -  Additional tools: you can analyze MQTT topics in topic viewer, such as mosquitto topic viewer (with `mosquitto-sub -t 'insert_topic'` in cmd, make sure to change directory to mosquitto folder). If you're not into cmd, MQTTX topic viewer helps too
 
 ## Operating the program
 - When everything is running, the initial state is in **auto mode**, which means ESP receives data from data generated from python. LED buttons are disabled
